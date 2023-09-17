@@ -1,0 +1,163 @@
+﻿@model as_ui_cdcavell.Models.Registration.AdministrationModel
+
+@using CDCavell.ClassLibrary.Web.Identity.Models
+@using IdentityModel
+@using Microsoft.AspNetCore.Identity
+@using System.Linq
+@inject UserManager<ApplicationUser> UserManager
+
+@{
+    string subject = string.Empty;
+    ApplicationUser user = null;
+
+    if (User.Identity.IsAuthenticated)
+    { 
+        subject = User.Claims.Where(x => x.Type == JwtClaimTypes.Subject).Select(x => x.Value).FirstOrDefault();
+        user = await UserManager.FindByIdAsync(subject);
+    }
+}
+
+<h1 class="h2 mb-1">
+    Role Claim Administration
+</h1>
+
+@using (Html.BeginForm("RoleClaim", "Registration", FormMethod.Post, new { id = "form", suppressSubmit = "false", showWarning = "false" }))
+{
+@Html.HiddenFor(model => model.Action)
+@Html.HiddenFor(model => model.Id)
+@Html.HiddenFor(model => model.RoleId)
+@Html.HiddenFor(model => model.ClaimId)
+@Html.HiddenFor(model => model.SearchModel.SearchRequest)
+<div class="card shadow-sm pl-0">
+    <div class="card-header rounded-top bg-white border-bottom-0">
+        <div class="d-flex flex-row">
+            <div class="col-sm-1 col-md-1 p-1 p-0 m-0 mt-1 text-right">
+                @Html.Gravatar(Model.SearchModel.SearchResult.Email, size:32, htmlAttributes:new { @class = "rounded pl-1", alt = "Gravatar" })
+            </div>
+            <div class="col-sm-1 col-md-1 p-1 m-0 text-right">
+                <label for="userName" class="mt-2 ml-2">Name</label>
+            </div>
+            <div class="col-sm-3 col-md-3 m-0">
+                <input type="text" id="userName" name="userName" value="@Model.SearchModel.SearchResult.FullName" readonly class="form-control form-control-sm m-0 mt-2">
+            </div>
+            <div class="col-sm-1 col-md-1 p-1 m-0 text-right">
+                <label for="userEmail" class="mt-2 ml-2">Email</label>
+            </div>
+            <div class="col-sm-3 col-md-3 m-0">
+                <input type="text" id="userEmail" name="userMail" value="@Model.SearchModel.SearchResult.Email" readonly class="form-control form-control-sm m-0 mt-2">
+            </div>
+            <div class="col-sm-1 col-md-1 p-1 m-0 text-right">
+                <label for="userEmail" class="mt-2 ml-2">Status</label>
+            </div>
+            <div class="col-sm-2 col-md-2 m-0">
+                <input type="text" id="userStatus" name="userStatus" value="@Model.SearchModel.SearchResult.Status" readonly class="form-control form-control-sm m-0 mt-2">
+            </div>
+        </div>
+    </div>
+    @if (Model.SearchModel.SearchResult.IsActive)
+    {
+    <div class="card-body rounded-top bg-white mt-0">
+        <div class="d-flex flex-row">
+            <p class="font-small text-muted">
+                Role Claims
+            </p>
+        </div>
+        <div class="accordion" id="accordionRoleClaims">
+        @foreach (ApplicationRole role in Model.Roles)
+        {
+            <div class="card">
+                <div class="card-header p-0 m-0" id="heading_@role.Id">
+                    <h2 class="p-0 m-0">
+                        <button class="btn btn-link" type="button" data-toggle="collapse" data-target="#collapse_@role.Id" aria-expanded="true" aria-controls="collapse_@role.Id">
+                            Role: @role.Name
+                        </button>
+                    </h2>
+                </div>
+                <div id="collapse_@role.Id" class="collapse p-0 m-0" aria-labelledby="heading_@role.Id" data-parent="#accordionRoleClaims">
+                    <div class="card-body m-1 p-2">
+                    @foreach (ApplicationRoleClaim roleClaim in role.RoleClaims)
+                    {
+                        var resultRoleClaim = Model.SearchModel.SearchResult.RoleClaims
+                            .Where(x => x.RoleClaimId == roleClaim.Id)
+                            .FirstOrDefault();
+
+                        <div class="d-flex flex-row p-0 m-0">
+                            <div class="col-sm-1 col-md-1 p-1">
+                                Claim Type: 
+                            </div>
+                            <div class="col-sm-9 col-md-9 p-1">
+                                @roleClaim.ClaimType
+                            </div>
+                            <div class="col-sm-2 col-md-2 p-1">
+                            @if (roleClaim.NormalizedClaimType != "SYSADMIN")
+                            {
+                                if (roleClaim.NormalizedClaimValue == "ACTIVE")
+                                {
+                                    @if ((resultRoleClaim != null) && (resultRoleClaim.Status == AspNetUserRoleClaim.RoleClaimStatus.Approved))
+                                    {
+                                        <a class="btn btn-dark btn-sm small ml-4 text-light @(user.HasRoleClaim("Admin:Edit") ? string.Empty : "disabled"))"
+                                           data-sitekey="@ViewBag.reCAPTCHA_SiteKey"
+                                           data-callback='onCaptchaSubmit'
+                                           data-action='submit'
+                                           action="DisableRoleClaim"
+                                           userId="@Model.SearchModel.SearchResult.UserId"
+                                           roleId="@role.Id"
+                                           claimId="@roleClaim.Id">
+                                           Disable
+                                           <i class="fas fa-times-circle text-grey ml-2" aria-hidden="true"></i>
+                                        </a>
+                                    }
+                                    else
+                                    {
+                                        <a class="enableButton btn btn-dark btn-sm small ml-4 text-light @(user.HasRoleClaim("Admin:Edit") ? string.Empty : "disabled")"
+                                           data-sitekey="@ViewBag.reCAPTCHA_SiteKey"
+                                           data-callback='onCaptchaSubmit'
+                                           data-action='submit'
+                                           action="EnableRoleClaim"
+                                           userId="@Model.SearchModel.SearchResult.UserId"
+                                           roleId="@role.Id"
+                                           claimId="@roleClaim.Id">
+                                           Enable
+                                           <i class="fas fa-check-circle text-grey ml-2" aria-hidden="true"></i>
+                                        </a>
+                                    }
+                                }
+                            }
+                            </div>
+                        </div>
+                    }
+                    </div>
+                </div>
+            </div>
+        }
+        </div>
+    </div>
+    }
+</div>
+}
+
+@section scripts {
+<script type="text/javascript" nonce="@ViewBag.ScriptNonce">
+
+    $(document).ready(function () {
+
+        $(document).on("click", "a", function (event) {
+            var action = $(this).attr("action");
+            var userId = $(this).attr("userId");
+            var roleId = $(this).attr("roleId");
+            var claimId = $(this).attr("claimId");
+
+            if (action === "EnableRoleClaim" || action === "DisableRoleClaim") {
+                $("#Action").val(action);
+                $("#Id").val(userId);
+                $("#RoleId").val(roleId);
+                $("#ClaimId").val(claimId);
+
+                $("#form").submit();
+            }
+        });
+
+    });
+
+</script>
+}

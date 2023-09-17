@@ -1,0 +1,115 @@
+﻿@using CDCavell.ClassLibrary.Web.Identity.Models
+@using IdentityModel
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Identity
+@using System.Linq
+@inject IAuthorizationService AuthorizationService
+@inject UserManager<ApplicationUser> UserManager
+
+@model as_ui_cdcavell.Models.Registration.StatusModel
+
+@{ 
+    string subject = string.Empty;
+    ApplicationUser user = null;
+
+    if (User.Identity.IsAuthenticated)
+    { 
+        subject = User.Claims.Where(x => x.Type == JwtClaimTypes.Subject).Select(x => x.Value).FirstOrDefault();
+        user = await UserManager.FindByIdAsync(subject);
+    }
+}
+
+<h1 class="h2 mb-1">
+    Account Information Update
+</h1>
+
+@using (Html.BeginForm("Update", "Registration", FormMethod.Post, new { id = "form", suppressSubmit = "false", showWarning = "false" }))
+{
+    <div class="card shadow-sm pl-0">
+        <div class="card-body rounded-top bg-white">
+            <div class="w-100 mt-1">
+                <div class="form-group row w-100 m-0 p-0">
+                    <div class="col-sm-1 col-md-1 p-1">
+                        @Html.LabelFor(model => model.Email)
+                    </div>
+                    <div class="col-sm-11 col-md-11">
+                        @Html.EditorFor(model => model.Email, new { HtmlAttributes = new { @class = "form-control form-control-sm m-0", @readonly = "readonly" } })
+                        @Html.ValidationMessageFor(model => model.Email, "", new { @class = "text-danger font-x-small" })
+                    </div>
+                </div>
+                <div class="form-group row w-100 m-0 p-0">
+                    <div class="col-sm-auto col-md-auto p-1">
+                        @Html.LabelFor(model => model.RequestDate)
+                    </div>
+                    <div class="col-sm-5 col-md-5">
+                        @Html.TextBoxFor(model => model.RequestDate, "{0:MMM dd, yyyy}", new { @readonly = "readonly", @class = "form-control form-control-sm m-0" })
+                    </div>
+                    <div class="col-sm-1 col-md-1 p-1">
+                        @Html.LabelFor(model => model.Status)
+                    </div>
+                    <div class="col w-100">
+                        @Html.TextBoxFor(model => model.Status, new { @readonly = "readonly", @class = "form-control form-control-sm m-0" })
+                    </div>
+                </div>
+                <div class="form-group row w-100 m-0 p-0">
+                    <div class="col-sm-1 col-md-1 p-1">
+                        @Html.LabelFor(model => model.FirstName)
+                    </div>
+                    <div class="col-sm-5 col-md-5">
+                        @Html.EditorFor(model => model.FirstName, new { HtmlAttributes = new { @class = "form-control form-control-sm m-0" } })
+                        @Html.ValidationMessageFor(model => model.FirstName, "", new { @class = "text-danger font-x-small" })
+                    </div>
+                    <div class="col-sm-1 col-md-1 p-1">
+                        @Html.LabelFor(model => model.LastName)
+                    </div>
+                    <div class="col-sm-5 col-md-5">
+                        @Html.EditorFor(model => model.LastName, new { HtmlAttributes = new { @class = "form-control form-control-sm m-0" } })
+                        @Html.ValidationMessageFor(model => model.LastName, "", new { @class = "text-danger font-x-small" })
+                    </div>
+                </div>
+            </div>
+            <div class="w-100 mt-1">
+                <div class="row w-100 m-0 p-0">
+                    <div class="col-sm-6 col-md-6 align-self-start m-0 p-0">
+                        <div class="row m-0 mb-2 p-0">
+                            <div class="col-sm-2 col-md-2 m-0 mt-4 p-0">
+                                Gravatar
+                            </div>
+                            <div class="col-sm-2 col-md-2 ml-2 p-1 pl-2">
+                                <a class="text-decoration-none" href="https://en.gravatar.com/" rel="external nofollow noopener" target="_blank">
+                                    @Html.Gravatar(user.Email, size:65, htmlAttributes:new { @class = "rounded pl-1", alt = "Gravatar" })
+                                    <h6>
+                                        <small class="font-x-small text-muted m-0 p-0">
+                                                [Update Image]
+                                        </small>
+                                    </h6>
+                                </a>
+                            </div>
+                            <div class="col-sm-8 col-md-8 m-0 p-0">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-sm-6 col-md-6 align-self-center m-0 p-0">
+                        @if (!user.IsSysAdmin)
+                        {
+                        <button class="btn btn-dark text-light border shadow-sm text-decoration-none m-3 mr-4 p-1 px-2 float-right g-recaptcha"
+                                data-sitekey="@ViewBag.reCAPTCHA_SiteKey"
+                                data-callback='onCaptchaSubmit'
+                                data-action='submit'>
+                            <i class="fas fa-inbox text-grey mt-1 ml-2 pl-1 float-right" aria-hidden="true"></i>
+                            Submit
+                        </button>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="card-footer rounded-bottom bg-white border-top-0 m-0 p-0">
+        </div>
+    </div>       
+
+}
+
+@section scripts {
+
+}

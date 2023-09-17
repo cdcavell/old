@@ -1,0 +1,328 @@
+﻿@model as_ui_cdcavell.Models.Registration.AdministrationModel
+
+@using CDCavell.ClassLibrary.Web.Identity.Models
+@using IdentityModel
+@using Microsoft.AspNetCore.Identity
+@using System.Linq
+@inject UserManager<ApplicationUser> UserManager
+
+@{
+    string subject = string.Empty;
+    ApplicationUser user = null;
+
+    if (User.Identity.IsAuthenticated)
+    { 
+        subject = User.Claims.Where(x => x.Type == JwtClaimTypes.Subject).Select(x => x.Value).FirstOrDefault();
+        user = await UserManager.FindByIdAsync(subject);
+    }
+}
+
+<h1 class="h2 mb-1">
+    Account Administration
+</h1>
+
+@using (Html.BeginForm("Administration", "Registration", FormMethod.Post, new { id = "form", suppressSubmit = "false", showWarning = "false" }))
+{
+@Html.HiddenFor(model => model.Action)
+@Html.HiddenFor(model => model.Id)
+<div class="card shadow-sm pl-0">
+    <div class="card-body rounded-top bg-white">
+        @if (Model.PendingRegistrations.Count() > 0)
+        {
+        <div class="accordion" id="accordionPendingRegistration">
+            <div class="card">
+                <div class="card-header p-0 m-0" id="heading_PendingRegistration">
+                    <h2 class="p-0 m-0">
+                        <button class="btn btn-link btn-block text-decoration-none text-readonly" type="button" data-toggle="collapse" data-target="#collapse_PendingRegistration" aria-expanded="true" aria-controls="collapse_PendingRegistration">
+                            <div class="d-flex flex-row">
+                                <p class="font-small text-muted pb-0 mb-0">
+                                    @Model.PendingRegistrations.Count() Pending Registration@((Model.PendingRegistrations.Count() == 1) ? string.Empty : "s")
+                                </p>
+                            </div>
+                         </button>
+                    </h2>
+                </div>
+                <div id="collapse_PendingRegistration" class="collapse p-0 m-0" aria-labelledby="heading_PendingRegistration" data-parent="#accordionPendingRegistration">
+                    <div class="card-body m-1 p-2">
+                   @foreach (ApplicationUser applicationUser in Model.PendingRegistrations)
+                   {
+                        <div class="d-flex flex-row p-0 m-0">
+                            <div class="col-sm-9 col-md-9 p-1 text-left">
+                                <div class="d-flex flex-row p-0 m-0">
+                                    <div class="col-sm-2 col-md-2 p-1 text-right">
+                                        @Html.Label("RequestDate", "Request Date", new { @class = "mt-1" })
+                                    </div>
+                                    <div class="col-sm-2 col-md-2 p-1 text-left">
+                                        @Html.TextBox("RequestDate", applicationUser.RequestDate.Value.ToString("MMM dd, yyyy"), new { @readonly = "readonly", @class = "form-control form-control-sm m-0" })
+                                    </div>
+                                    <div class="col-sm-1 col-md-1 p-1 text-right">
+                                        @Html.Label("Name", "Name", new { @class = "mt-1" })
+                                    </div>
+                                    <div class="col-sm-3 col-md-3 p-1 text-left">
+                                        @Html.TextBox("Name", applicationUser.FullName, new { @readonly = "readonly", @class = "form-control form-control-sm m-0" })
+                                    </div>
+                                    <div class="col-sm-1 col-md-1 p-1 text-right">
+                                        @Html.Label("Email", "Email", new { @class = "mt-1" })
+                                    </div>
+                                    <div class="col-sm-3 col-md-3 p-1 text-left">
+                                        @Html.TextBox("Email", applicationUser.Email, new { @readonly = "readonly", @class = "form-control form-control-sm m-0" })
+                                    </div>
+                                    <div class="col-sm-auto col-md-auto p-1">
+                                        @Html.Gravatar(applicationUser.Email, size:30, htmlAttributes:new { @class = "rounded pl-1", alt = "Gravatar" })
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-sm-3 col-md-3 p-0 pt-2 text-right">
+                            @if (user.HasRoleClaim("Admin:Edit"))
+                            {
+                                <button class="btn btn-dark text-light border shadow-sm text-decoration-none m-0 mr-4 p-1 px-2 float-right g-recaptcha"
+                                        data-sitekey="@ViewBag.reCAPTCHA_SiteKey"
+                                        data-callback='onCaptchaSubmit'
+                                        data-action='submit'
+                                        userId="@applicationUser.Id"
+                                        id="rejectButton">
+                                    Reject
+                                    <i class="fas fa-times text-grey mt-1 ml-2 pl-1 float-right" aria-hidden="true"></i>
+                                </button>
+                                <button class="btn btn-dark text-light border shadow-sm text-decoration-none m-0 mr-4 p-1 px-2 float-right g-recaptcha"
+                                        data-sitekey="@ViewBag.reCAPTCHA_SiteKey"
+                                        data-callback='onCaptchaSubmit'
+                                        data-action='submit'
+                                        userId="@applicationUser.Id"
+                                        id="approveButton">
+                                    Approve
+                                    <i class="fas fa-check text-grey mt-1 ml-2 pl-1 float-right" aria-hidden="true"></i>
+                                </button>
+                            }
+                            </div>
+                        </div>
+                   }
+                    </div>
+                </div>
+            </div>
+        </div>
+        }
+
+        @if (user.HasRoleClaim("Admin:View"))
+        {
+        <div class="mt-2">
+            <div class="row m-0 p-0">
+                <div class="col-sm-10 col-md-10 p-1">
+                    <input class="form-control border-grey my-0 py-1" type="text" placeholder="Search" aria-label="Search" asp-for="SearchModel.SearchRequest" autofocus>
+                    <span asp-validation-for="SearchModel.SearchRequest" class="text-danger font-x-small"></span>
+                </div>
+                <div class="col-sm-2 col-md-2 p-1">
+                    <button class="btn btn-dark btn-sm small mt-1 ml-4 text-light float-right g-recaptcha"
+                        data-sitekey="@ViewBag.reCAPTCHA_SiteKey"
+                        data-callback='onCaptchaSubmit'
+                        data-action='submit'
+                        id="emailSearch">
+                        Find User By Email
+                        <i class="fas fa-search text-grey mt-1 ml-2 pl-1 float-right" aria-hidden="true"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+            if (   Model.Action.ToLower() == "search"
+                && ViewData.ModelState.IsValid
+                )
+            {
+            <div class="mt-2">
+                <div class="form-group row m-0 p-0">
+                    <div class="col-sm-1 col-md-1 p-2">
+                        @Html.LabelFor(model => model.SearchModel.SearchResult.Email)
+                    </div>
+                    <div class="col-sm-11 col-md-11">
+                        @Html.TextBoxFor(model => model.SearchModel.SearchResult.Email, new { @readonly = "readonly", @class = "form-control form-control-sm m-0" })
+                    </div>
+                </div>
+                <div class="form-group row m-0 p-0">
+                    <div class="col-sm-1 col-md-1 p-1">
+                        @Html.LabelFor(model => model.SearchModel.SearchResult.RequestDate)
+                    </div>
+                    <div class="col-sm-5 col-md-5">
+                        @Html.TextBoxFor(model => model.SearchModel.SearchResult.RequestDate, "{0:MMM dd, yyyy}", new { @readonly = "readonly", @class = "form-control form-control-sm m-0" })
+                    </div>
+                    <div class="col-sm-1 col-md-1 p-1">
+                        @Html.LabelFor(model => model.SearchModel.SearchResult.Status)
+                    </div>
+                    <div class="col-sm-5 col-md-5">
+                        @Html.TextBoxFor(model => model.SearchModel.SearchResult.Status, new { @readonly = "readonly", @class = "form-control form-control-sm m-0" })
+                    </div>
+                </div>
+                <div class="form-group row m-0 p-0">
+                    <div class="col-sm-1 col-md-1 p-1">
+                        @Html.LabelFor(model => model.SearchModel.SearchResult.FirstName)
+                    </div>
+                    <div class="col-sm-5 col-md-5">
+                        @Html.TextBoxFor(model => model.SearchModel.SearchResult.FirstName, new { @readonly = "readonly", @class = "form-control form-control-sm m-0" })
+                    </div>
+                    <div class="col-sm-1 col-md-1 p-1">
+                        @Html.LabelFor(model => model.SearchModel.SearchResult.LastName)
+                    </div>
+                    <div class="col-sm-5 col-md-5">
+                        @Html.TextBoxFor(model => model.SearchModel.SearchResult.LastName, new { @readonly = "readonly", @class = "form-control form-control-sm m-0" })
+                    </div>
+                </div>
+            </div>
+            <div class="mt-1">
+                <div class="row">
+                    <div class="col align-self-start">
+                        <div class="row m-0 mb-2 p-0">
+                            <div class="col-sm-2 col-md-2 mt-4 p-1">
+                                Gravatar
+                            </div>
+                            <div class="col-sm-2 col-md-2 ml-2 p-1 pl-2">
+                                @Html.Gravatar(Model.SearchModel.SearchResult.Email, size:64, htmlAttributes:new { @class = "rounded pl-1", alt = "Gravatar" })
+                            </div>
+                            <div class="col-sm-8 col-md-8 p-1">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col align-self-center">
+                    @if ((user.HasRoleClaim("Admin:Edit")) && (!Model.SearchModel.SearchResult.IsSelf) && (!Model.SearchModel.SearchResult.IsSysAdmin))
+                    {
+                        if (Model.SearchModel.SearchResult.IsActive || Model.SearchModel.SearchResult.IsPending)
+                        {
+                        <button class="btn btn-dark text-light border shadow-sm text-decoration-none m-0 mr-4 p-1 px-2 float-right g-recaptcha"
+                                data-sitekey="@ViewBag.reCAPTCHA_SiteKey"
+                                data-callback='onCaptchaSubmit'
+                                data-action='submit'
+                                userId="@Model.SearchModel.SearchResult.UserId"
+                                id="rejectButton">
+                            Revoke Access
+                            <i class="fas fa-times text-grey ml-2 mt-1 ml-2 pl-1 float-right" aria-hidden="true"></i>
+                        </button>
+                        }
+                        if (Model.SearchModel.SearchResult.IsRevoked || Model.SearchModel.SearchResult.IsPending)
+                        { 
+                        <button class="btn btn-dark text-light border shadow-sm text-decoration-none m-0 mr-4 p-1 px-2 float-right g-recaptcha"
+                                data-sitekey="@ViewBag.reCAPTCHA_SiteKey"
+                                data-callback='onCaptchaSubmit'
+                                data-action='submit'
+                                userId="@Model.SearchModel.SearchResult.UserId"
+                                id="approveButton">
+                            Approve Access
+                            <i class="fas fa-check text-grey ml-2 mt-1 ml-2 pl-1 float-right" aria-hidden="true"></i>
+                        </button>
+                        }
+                        if (Model.SearchModel.SearchResult.IsActive)
+                        {
+                        <button class="btn btn-dark text-light border shadow-sm text-decoration-none m-0 mr-4 p-1 px-2 float-right g-recaptcha"
+                                data-sitekey="@ViewBag.reCAPTCHA_SiteKey"
+                                data-callback='onCaptchaSubmit'
+                                data-action='submit'
+                                userId="@Model.SearchModel.SearchResult.UserId"
+                                id="roleClaimButton">
+                            Update Role Claims
+                            <i class="fas fa-unlock text-grey ml-2 mt-1 ml-2 pl-1 float-right" aria-hidden="true"></i>
+                        </button>
+                        }
+                    }
+                    </div>
+                </div>
+            </div>
+                @if (Model.SearchModel.SearchResult.RoleClaims.Count > 0)
+                {
+                <div class="row w-100 m-0 p-0">
+                    <p class="font-small text-muted mb-0 pb-0">Role Claims</p>
+                </div>
+                <div class="row w-100 m-0 p-0">
+                    <div class="accordion w-100 m-0 p-0" id="accordionRoleClaims">
+                    @foreach (AspNetUserRoleClaim roleClaim in Model.SearchModel.SearchResult.RoleClaims)
+                    {
+                        <div class="card w-100 m-0 p-0 bg-white border-0">
+                            <div class="card-header p-0 m-0 bg-white border-0" id="heading_@roleClaim.Id">
+                                <h2 class="p-0 m-0">
+                                    <button class="btn btn-link btn-block text-decoration-none text-readonly" type="button" data-toggle="collapse" data-target="#collapse_@roleClaim.Id" aria-expanded="true" aria-controls="collapse_@roleClaim.Id">
+                                        <div class="d-flex flex-row p-0 m-0">
+                                            <div class="col-sm-1 col-md-1 p-1 text-right">
+                                                @Html.Label("Role","Role", new { @class = "mt-1"})
+                                            </div>
+                                            <div class="col-sm-3 col-md-3 p-1 text-left">
+                                                @Html.TextBox("Role", roleClaim.Role, new { @readonly = "readonly", @class = "form-control form-control-sm m-0" })
+                                            </div>
+                                            <div class="col-sm-1 col-md-1 p-1 text-right">
+                                                @Html.Label("Claim Type","Claim Type", new { @class = "mt-1"})
+                                            </div>
+                                            <div class="col-sm-3 col-md-3 p-1 text-left">
+                                                @Html.TextBox("Claim Type", roleClaim.RoleClaim.ClaimType, new { @readonly = "readonly", @class = "form-control form-control-sm m-0" })
+                                            </div>
+                                            <div class="col-sm-1 col-md-1 p-1 text-right">
+                                                @Html.Label("Status","Status", new { @class = "mt-1"})
+                                            </div>
+                                            <div class="col-sm-3 col-md-3 p-1 text-left">
+                                                @Html.TextBox("Status", roleClaim.Status, new { @readonly = "readonly", @class = "form-control form-control-sm m-0" })
+                                            </div>
+                                        </div>                            
+                                    </button>
+                                </h2>
+                            </div>
+                            <div id="collapse_@roleClaim.Id" class="collapse p-0 m-0" aria-labelledby="heading_@roleClaim.Id" data-parent="#accordionRoleClaims">
+                                <div class="card-body m-1 p-2 border">
+                                @foreach(AspNetUserRoleClaimHistory history in roleClaim.History)
+                                {
+                                    <div class="d-flex flex-row p-0 m-0">
+                                        <div class="col-sm-1 col-md-1 p-1 text-right">
+                                            @Html.Label("Date","Date", new { @class = "mt-1"})
+                                        </div>
+                                        <div class="col-sm-3 col-md-3 p-1 text-left">
+                                            @Html.TextBox("ActionOn",history.ActionOn.ToString("MMM dd, yyyy"), new { @readonly = "readonly", @class = "form-control form-control-sm m-0" })
+                                        </div>
+                                        <div class="col-sm-1 col-md-1 p-1 text-right">
+                                            @Html.Label("Action","Action", new { @class = "mt-1"})
+                                        </div>
+                                        <div class="col-sm-3 col-md-3 p-1 text-left">
+                                            @Html.TextBox("Status",history.Status, new { @readonly = "readonly", @class = "form-control form-control-sm m-0" })
+                                        </div>
+                                        <div class="col-sm-1 col-md-1 p-1 text-right">
+                                            @Html.Label("ActionBy","Action By", new { @class = "mt-1"})
+                                        </div>
+                                        <div class="col-sm-3 col-md-3 p-1 text-left">
+                                            @Html.TextBox("ActionBy",history.ActionBy.FullName, new { @readonly = "readonly", @class = "form-control form-control-sm m-0" })
+                                        </div>
+                                    </div>
+                                }
+                                </div>
+                            </div>
+                        </div>
+                    }
+                    </div>
+                </div>
+                }
+            }           
+        }
+    </div>
+</div>
+}
+
+@section scripts {
+<script type="text/javascript" nonce="@ViewBag.ScriptNonce">
+
+    $(document).ready(function () {
+
+        $("#approveButton").click(function (event) {
+            $("#Action").val("Approve");
+            $("#Id").val($(this).attr("userId"));
+        });
+
+        $("#rejectButton").click(function (event) {
+            $("#Action").val("Reject");
+            $("#Id").val($(this).attr("userId"));
+        });
+
+        $("#emailSearch").click(function (event) {
+            $("#Action").val("Search");
+            $("#Id").val("");
+        });
+
+        $("#roleClaimButton").click(function (event) {
+            $("#Action").val("RoleClaim");
+            $("#Id").val($(this).attr("userId"));
+            $("form").attr("action", "/Registration/RoleClaim");
+        });
+
+    });
+
+</script>
+}

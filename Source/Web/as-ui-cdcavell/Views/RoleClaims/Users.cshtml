@@ -1,0 +1,103 @@
+﻿@model as_ui_cdcavell.Models.RoleClaims.ViewModel
+
+@using CDCavell.ClassLibrary.Web.Identity.Models
+@using IdentityModel
+@using Microsoft.AspNetCore.Identity
+@using System.Linq
+@inject UserManager<ApplicationUser> UserManager
+
+@{ 
+    string subject = string.Empty;
+    ApplicationUser user = null;
+
+    if (User.Identity.IsAuthenticated)
+    { 
+        subject = User.Claims.Where(x => x.Type == JwtClaimTypes.Subject).Select(x => x.Value).FirstOrDefault();
+        user = await UserManager.FindByIdAsync(subject);
+    }
+}
+
+<h1 class="h2 mb-1">
+    System Role Claim Users
+</h1>
+
+@using (Html.BeginForm("RevokeClaim", "RoleClaims", FormMethod.Post, new { id = "form", suppressSubmit = "false", showWarning = "false" }))
+{
+@Html.HiddenFor(model => model.RoleId)
+@Html.HiddenFor(model => model.ClaimId)
+@Html.HiddenFor(model => model.RevokeId)
+<div class="card shadow-sm pl-0">
+    <div class="card-header rounded-top bg-white border-top-0 m-0 p-0">
+        <div class="d-flex flex-row p-0 m-0">
+            <div class="col-sm-1 col-md-1 p-1">
+               <label for="roleName" class="mt-2 ml-2">Role</label>
+            </div>
+            <div class="col-sm-5 col-md-5">
+                <input type="text" id="roleName" name="roleName" value="@Model.RoleDescription" readonly class="form-control form-control-sm m-0 mt-2">
+            </div>
+            <div class="col-sm-1 col-md-1 p-1">
+               <label for="claimName" class="mt-2">Claim</label>
+            </div>
+            <div class="col-sm-5 col-md-5">
+                <input type="text" id="claimName" name="claimName" value="@Model.ClaimDescription" readonly class="form-control form-control-sm m-0 mt-2">
+            </div>
+        </div>
+    </div>
+    <div class="card-body rounded-top bg-white">
+        <div class="d-flex flex-row p-0 m-0">
+            <div class="card-body m-0 p-2 border-0">
+            @foreach (ApplicationUser roleClaimUser in Model.Users)
+            { 
+                <div class="d-flex flex-row p-0 m-0">
+                    <div class="col-sm-1 col-md-1 p-1 p-0 m-0 mt-1 text-right">
+                        @Html.Gravatar(roleClaimUser.Email, size:32, htmlAttributes:new { @class = "rounded pl-1", alt = "Gravatar" })
+                    </div>
+                    <div class="col-sm-1 col-md-1 p-1 m-0 text-right">
+                        <label for="userName" class="mt-2 ml-2">Name</label>
+                    </div>
+                    <div class="col-sm-3 col-md-3 m-0">
+                        <input type="text" id="userName" name="userName" value="@roleClaimUser.FullName" readonly class="form-control form-control-sm m-0 mt-2">
+                    </div>
+                    <div class="col-sm-1 col-md-1 p-1 m-0 text-right">
+                        <label for="userEmail" class="mt-2 ml-2">Email</label>
+                    </div>
+                    <div class="col-sm-3 col-md-3 m-0">
+                        <input type="text" id="userEmail" name="userMail" value="@roleClaimUser.Email" readonly class="form-control form-control-sm m-0 mt-2">
+                    </div>
+                    <div class="col-sm-3 col-md-3 p-1 m-0 mt-1 text-right">
+                        @if ((user.HasRoleClaim("Admin:Edit")) && (!roleClaimUser.IsSysAdmin))
+                        { 
+                        <button class="btn btn-dark text-light border shadow-sm text-decoration-none m-0 p-1 px-2 float-right g-recaptcha"
+                                data-sitekey="@ViewBag.reCAPTCHA_SiteKey"
+                                data-callback='onCaptchaSubmit'
+                                data-action='submit'
+                                userId="@roleClaimUser.Id"
+                                id="revokeRoleClaimButton">
+                            Disable
+                            <i class="fas fa-times text-grey ml-2 mt-1 ml-2 pl-1 float-right" aria-hidden="true"></i>
+                        </button>
+                        }
+                    </div>
+                </div>
+            }
+            </div>
+        </div>
+    </div>
+    <div class="card-footer rounded-bottom bg-white border-top-0 m-0 p-0">
+    </div>
+</div>
+}
+
+@section scripts {
+<script type="text/javascript" nonce="@ViewBag.ScriptNonce">
+
+    $(document).ready(function () {
+
+        $("#revokeRoleClaimButton").click(function (event) {
+            $("#RevokeId").val($(this).attr("userId"));
+        });
+
+    });
+
+</script>
+}

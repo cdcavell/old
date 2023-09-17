@@ -1,0 +1,25 @@
+﻿
+@{
+    var loginUrl = ViewData["LoginUrl"] as string;
+}
+
+<h1 class="h2 mb-1">
+    Two-Factor Authentication
+</h1>
+<p class="font-small text-muted">
+    Two-factor authentication has been disabled. 
+</p>
+<div class="card shadow-sm pl-0">
+    <div class="card-footer rounded-bottom bg-white border-top-0 m-0 p-0">
+        <a id="accountLogin"
+            type="button"
+            class="btn btn-dark text-light border shadow-sm text-decoration-none m-3 mr-0 p-1 pr-0 px-2 float-right"
+            href="@loginUrl">
+            <i class="fas fa-sign-in-alt text-grey mt-1 ml-2 pl-1 float-right" aria-hidden="true"></i>
+            Login to Website
+        </a>
+    </div>
+</div>
+
+@section scripts {
+}

@@ -1,0 +1,111 @@
+﻿@model as_ui_cdcavell.Models.RoleClaims.ViewModel
+
+@using CDCavell.ClassLibrary.Web.Identity.Models
+@using IdentityModel
+@using Microsoft.AspNetCore.Identity
+@using System.Linq
+@inject UserManager<ApplicationUser> UserManager
+
+@{ 
+    string subject = string.Empty;
+    ApplicationUser user = null;
+
+    if (User.Identity.IsAuthenticated)
+    { 
+        subject = User.Claims.Where(x => x.Type == JwtClaimTypes.Subject).Select(x => x.Value).FirstOrDefault();
+        user = await UserManager.FindByIdAsync(subject);
+    }
+}
+
+<h1 class="h2 mb-1">
+    System Role Claims
+</h1>
+
+<div class="card shadow-sm pl-0">
+    <div class="card-body rounded-top bg-white">
+        <div class="d-flex flex-row">
+            <p class="font-small text-muted">
+                Role Claims
+            </p>
+        </div>
+        <div class="accordion" id="accordionRoleClaims">
+        @foreach(ApplicationRole role in Model.Roles)
+        {
+            <div class="card">
+                <div class="card-header p-0 m-0" id="heading_@role.Id">
+                    <h2 class="p-0 m-0">
+                        <button class="btn btn-link" type="button" data-toggle="collapse" data-target="#collapse_@role.Id" aria-expanded="true" aria-controls="collapse_@role.Id">
+                            Role: @role.Name
+                        </button>
+                    </h2>
+                </div>
+                <div id="collapse_@role.Id" class="collapse p-0 m-0" aria-labelledby="heading_@role.Id" data-parent="#accordionRoleClaims">
+                    <div class="card-body m-1 p-2">
+                    @foreach(ApplicationRoleClaim roleClaim in role.RoleClaims)
+                    { 
+                        <div class="d-flex flex-row p-0 m-0">
+                            <div class="col-sm-1 col-md-1 p-1">
+                                Claim Type: 
+                            </div>
+                            <div class="col-sm-7 col-md-7 p-1">
+                                @roleClaim.ClaimType
+                            </div>
+                            <div class="col-sm-2 col-md-2 p-1">
+                                @if (roleClaim.NormalizedClaimType != "SYSADMIN")
+                                {
+                                    if (roleClaim.NormalizedClaimValue == "ACTIVE")
+                                    {
+                                        <a id="disable"
+                                            type="button"
+                                            class="btn btn-dark btn-sm small ml-4 text-light @(user.HasRoleClaim("Admin:Edit") ? string.Empty : "disabled"))"
+                                            asp-route-role="@role.Id"
+                                            asp-route-claim="@roleClaim.Id"
+                                            asp-action="Disable"
+                                            asp-controller="RoleClaims">
+                                            Disable
+                                            <i class="fas fa-times-circle text-grey ml-2" aria-hidden="true"></i>
+                                        </a>
+                                    }
+                                    else
+                                    { 
+                                        <a id="enable"
+                                            type="button"
+                                            class="btn btn-dark btn-sm small ml-4 text-light @(user.HasRoleClaim("Admin:Edit") ? string.Empty : "disabled")"
+                                            asp-route-role="@role.Id"
+                                            asp-route-claim="@roleClaim.Id"
+                                            asp-action="Enable"
+                                            asp-controller="RoleClaims">
+                                            Enable
+                                            <i class="fas fa-check-circle text-grey ml-2" aria-hidden="true"></i>
+                                        </a>
+                                    }
+                                }
+                            </div>
+                            <div class="col-sm-2 col-md-2 p-1">
+                                <a id="viewUsers"
+                                    type="button"
+                                    class="btn btn-dark btn-sm small ml-4 text-light"
+                                    asp-route-role="@role.Id"
+                                    asp-route-claim="@roleClaim.Id"
+                                    asp-action="Users"
+                                    asp-controller="RoleClaims">
+                                    View Users
+                                    <i class="fas fa-users text-grey ml-2" aria-hidden="true"></i>
+                                </a>
+                            </div>
+                        </div>
+                    }
+                    </div>
+                </div>
+            </div>
+        }
+        </div>
+        <br />
+    </div>
+    <div class="card-footer rounded-bottom bg-white border-top-0 m-0 p-0">
+    </div>
+</div>       
+
+
+@section scripts {
+}

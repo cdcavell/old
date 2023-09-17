@@ -1,0 +1,12 @@
+﻿@{ 
+    var email = ViewData["Email"] as string;
+}
+<h1 class="h2 mb-1">
+    Email Validation
+</h1>
+<p class="font-small text-muted">
+    Email validation is required and an email has been submitted to @email. To validate, please 
+    click on link supplied in this email or copy and paste in browser. The link will be valid 
+    for approximately fifteen minutes. If not submitted within this time, you may login again and a 
+    new validation request will be submitted to @email.
+</p>
